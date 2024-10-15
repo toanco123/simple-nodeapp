@@ -2,8 +2,8 @@ import Customer from "../models/customer.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = "123456";
-const JWT_REFRESH_SECRET = "refresh_123456"; // Secret key cho refresh token
+const JWT_SECRET = process.env.JWT_SECRET
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET
 
 const generateAccessToken = (customer) => {
   return jwt.sign({ username: customer.username }, JWT_SECRET, {
