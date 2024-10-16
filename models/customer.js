@@ -2,6 +2,12 @@ import { sequelize } from "../db.js";
 const Customer = sequelize.define(
   "customers",
   {
+    id: {
+      allowNull: false,
+      autoIncrement: true,
+      primaryKey: true,
+      type: sequelize.Sequelize.INTEGER,
+    },
     username: {
       type: sequelize.Sequelize.STRING,
       allowNull: false,
@@ -24,6 +30,9 @@ const Customer = sequelize.define(
           msg: "Password cannot be empty",
         },
       },
+    },
+    refreshToken: {
+      type: sequelize.Sequelize.STRING,
     },
   },
   {

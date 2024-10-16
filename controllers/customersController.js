@@ -7,13 +7,13 @@ const JWT_SECRET = process.env.JWT_SECRET
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET
 
 const generateAccessToken = (customer) => {
-  return jwt.sign({ username: customer.username }, JWT_SECRET, {
+  return jwt.sign({id: customer.id, username: customer.username }, JWT_SECRET, {
     expiresIn: "1h",
   });
 };
 
 const generateRefreshToken = (customer) => {
-  return jwt.sign({ username: customer.username }, JWT_REFRESH_SECRET, {
+  return jwt.sign({id: customer.id, username: customer.username }, JWT_REFRESH_SECRET, {
     expiresIn: "7d", // Refresh token có thời gian sống lâu hơn, ví dụ 7 ngày
   });
 };
@@ -64,12 +64,8 @@ const loginCustomer = async (req, res) => {
     const accessToken = generateAccessToken(customer);
     const refreshToken = generateRefreshToken(customer);
 
-    res.cookie('refreshToken', refreshToken, {
-      // httpOnly: true, // Chỉ có thể truy cập từ server
-      // secure: true, // Chỉ dùng cho HTTPS
-      // sameSite: 'Strict',// Bảo vệ chống CSRF
-      // maxAge: 7 * 24 * 60 * 60 * 1000 
-    });
+    customer.refreshToken = refreshToken;
+    await customer.save();
 
     res.status(200).json({
       message: "Login successful",
@@ -83,7 +79,7 @@ const loginCustomer = async (req, res) => {
 };
 
 const refreshAccessToken = async (req, res) => {
-  const { refreshToken } = req.cookies;
+  const { refreshToken } = req.body;
 
   if (!refreshToken) {
     return res.status(401).json({ message: "Refresh token required" });
@@ -93,8 +89,12 @@ const refreshAccessToken = async (req, res) => {
     const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
 
     const customer = await Customer.findOne({
-      where: { username: decoded.username },
+      where: { username: decoded.username, refreshToken },
     });
+
+    if (!customer) {
+      return res.status(403).json({ message: "Invalid refresh token" });
+    }
 
     // Tạo access token mới
     const newAccessToken = generateAccessToken(customer);
@@ -124,7 +124,8 @@ const logoutCustomer = async (req, res) => {
       return res.status(400).json({ message: "Customer not found" });
     }
 
-    res.clearCookie('refreshToken', {});
+    customer.refreshToken = null;
+    await customer.save();
 
     res.status(200).json({ message: "Logout successful" });
   } catch (error) {
