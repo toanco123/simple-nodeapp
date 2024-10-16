@@ -2,13 +2,13 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.addColumn('Customers', 'refreshToken', {
+    await queryInterface.addColumn('customers', 'refreshToken', {
       type: Sequelize.STRING,
       allowNull: true,
     });
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.removeColumn('Customers', 'refreshToken');
+    await queryInterface.removeColumn('customers', 'refreshToken');
   }
 };
