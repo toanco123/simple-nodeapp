@@ -5,7 +5,8 @@ import 'dotenv/config'
 
 const JWT_SECRET = process.env.JWT_SECRET
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET
-
+const saltRounds = 10;
+const salt = bcrypt.genSaltSync(saltRounds)
 const generateAccessToken = (customer) => {
   return jwt.sign({id: customer.id, username: customer.username }, JWT_SECRET, {
     expiresIn: "1h",
@@ -64,7 +65,8 @@ const loginCustomer = async (req, res) => {
     const accessToken = generateAccessToken(customer);
     const refreshToken = generateRefreshToken(customer);
 
-    customer.refreshToken = refreshToken;
+    const hashedRefreshToken = bcrypt.hashSync(refreshToken, salt);
+    customer.refreshToken = hashedRefreshToken;
     await customer.save();
 
     res.status(200).json({
@@ -87,12 +89,18 @@ const refreshAccessToken = async (req, res) => {
 
   try {
     const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
-
     const customer = await Customer.findOne({
-      where: { username: decoded.username, refreshToken },
+      // where: { id: decoded.id },
+      where: { refreshToken: bcrypt.hashSync(refreshToken, salt) },
     });
 
     if (!customer) {
+      return res.status(403).json({ message: "Customer not found" });
+    }
+
+    const isRefreshTokenValid = await bcrypt.compare(refreshToken,customer.refreshToken);
+
+    if (!isRefreshTokenValid) {
       return res.status(403).json({ message: "Invalid refresh token" });
     }
 
@@ -105,6 +113,10 @@ const refreshAccessToken = async (req, res) => {
     });
   } catch (error) {
     if (error.name === "TokenExpiredError") {
+      await Customer.update(
+        { refreshToken: null },
+        { where: { refreshToken } }
+      );
       return res
         .status(403)
         .json({ message: "Refresh token expired, please login again" });
