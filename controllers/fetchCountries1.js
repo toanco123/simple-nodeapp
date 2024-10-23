@@ -6,6 +6,7 @@ import States from "../models/states.js";
 import Subdivision from "../models/subdivision.js";
 import ContinentsCountriesStates from "../models/continents_countries_states.js";
 import lodash from "lodash";
+import { sequelize } from "../db.js";
 
 const fetchCountries = async () => {
   const query = `
@@ -157,30 +158,93 @@ const fetchCountries = async () => {
     const allSubdivisions = await Subdivision.findAll({ where: {} });
 
     // Cập nhật bảng `Country` với `languages_id` và `subdivisions_id`
+    // for (const country of countries) {
+    //   const foundCountry = allCountries.find((c) => c.code === country.code);
+
+    //   if (country.languages && country.languages.length) {
+    //     for (const language of country.languages) {
+    //       const foundLanguage = allLanguages.find((lang) => lang.code === language.code);
+          
+    //       // Cập nhật `languages_id` vào bảng `Country`
+    //       if (foundCountry && foundLanguage) {
+    //         await foundCountry.update({ languages_id: foundLanguage.id });
+    //       }
+    //     }
+    //   }
+
+    //   if (country.subdivisions && country.subdivisions.length) {
+    //     for (const subdivision of country.subdivisions) {
+    //       const foundSubdivision = allSubdivisions.find((sub) => sub.code === subdivision.code);
+          
+    //       // Cập nhật `subdivisions_id` vào bảng `Country`
+    //       if (foundCountry && foundSubdivision) {
+    //         await foundCountry.update({ subdivisions_id: foundSubdivision.id });
+    //       }
+    //     }
+    //   }
+    // }
+
+    const languageUpdates = [];
+    const subdivisionUpdates = [];
+  
     for (const country of countries) {
       const foundCountry = allCountries.find((c) => c.code === country.code);
-
-      if (country.languages && country.languages.length) {
-        for (const language of country.languages) {
-          const foundLanguage = allLanguages.find((lang) => lang.code === language.code);
-          
-          // Cập nhật `languages_id` vào bảng `Country`
-          if (foundCountry && foundLanguage) {
-            await foundCountry.update({ languages_id: foundLanguage.id });
+  
+      if (foundCountry) {
+        if (country.languages && country.languages.length) {
+          for (const language of country.languages) {
+            const foundLanguage = allLanguages.find((lang) => lang.code === language.code);
+            if (foundLanguage) {
+              languageUpdates.push({
+                countryId: foundCountry.id,
+                languageId: foundLanguage.id,
+              });
+            }
+          }
+        }
+  
+        if (country.subdivisions && country.subdivisions.length) {
+          for (const subdivision of country.subdivisions) {
+            const foundSubdivision = allSubdivisions.find((sub) => sub.code === subdivision.code);
+            if (foundSubdivision) {
+              subdivisionUpdates.push({
+                countryId: foundCountry.id,
+                subdivisionId: foundSubdivision.id,
+              });
+            }
           }
         }
       }
-
-      if (country.subdivisions && country.subdivisions.length) {
-        for (const subdivision of country.subdivisions) {
-          const foundSubdivision = allSubdivisions.find((sub) => sub.code === subdivision.code);
-          
-          // Cập nhật `subdivisions_id` vào bảng `Country`
-          if (foundCountry && foundSubdivision) {
-            await foundCountry.update({ subdivisions_id: foundSubdivision.id });
-          }
-        }
-      }
+    }
+  
+    // Tạo câu lệnh SQL cập nhật languages_id cho nhiều countries cùng lúc
+    if (languageUpdates.length > 0) {
+      const languageCases = languageUpdates
+        .map(({ countryId, languageId }) => `WHEN id = ${countryId} THEN ${languageId}`)
+        .join(" ");
+  
+      const languageQuery = `
+        UPDATE Countries
+        SET languages_id = CASE ${languageCases} END
+        WHERE id IN (${languageUpdates.map((u) => u.countryId).join(", ")});
+      `;
+  
+      await sequelize.query(languageQuery);
+    }
+  
+    // Tạo câu lệnh SQL cập nhật subdivisions_id cho nhiều countries cùng lúc
+    if (subdivisionUpdates.length > 0) {
+      const subdivisionCases = subdivisionUpdates
+        .map(({ countryId, subdivisionId }) => `WHEN id = ${countryId} THEN ${subdivisionId}`)
+        .join(" ");
+  
+      const subdivisionQuery = `
+        UPDATE Countries
+        SET subdivisions_id = CASE ${subdivisionCases} END
+        WHERE id IN (${subdivisionUpdates.map((u) => u.countryId).join(", ")});
+      `;
+  
+      await sequelize.query(subdivisionQuery);
     }
 
     // Tạo dữ liệu để lưu vào bảng liên kết `ContinentsCountriesStates`
