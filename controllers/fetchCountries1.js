@@ -191,16 +191,22 @@ const fetchCountries = async () => {
       const foundCountry = allCountries.find((c) => c.code === country.code);
   
       if (foundCountry) {
+        const languageIds = [];
         if (country.languages && country.languages.length) {
           for (const language of country.languages) {
             const foundLanguage = allLanguages.find((lang) => lang.code === language.code);
             if (foundLanguage) {
-              languageUpdates.push({
-                countryId: foundCountry.id,
-                languageId: foundLanguage.id,
-              });
+              languageIds.push(foundLanguage.id);
             }
           }
+        }
+
+
+        if (languageIds.length > 0) {
+          languageUpdates.push({
+            countryId: foundCountry.id,
+            languageIds: JSON.stringify(languageIds), // Lưu dưới dạng JSON
+          });
         }
   
         if (country.subdivisions && country.subdivisions.length) {
@@ -214,13 +220,13 @@ const fetchCountries = async () => {
             }
           }
         }
-      }
+      } 
     }
-  
+
     // Tạo câu lệnh SQL cập nhật languages_id cho nhiều countries cùng lúc
     if (languageUpdates.length > 0) {
       const languageCases = languageUpdates
-        .map(({ countryId, languageId }) => `WHEN id = ${countryId} THEN ${languageId}`)
+        .map(({ countryId, languageIds }) => `WHEN id = ${countryId} THEN '${languageIds}'`)
         .join(" ");
   
       const languageQuery = `

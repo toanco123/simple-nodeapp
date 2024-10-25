@@ -20,4 +20,14 @@ const Continents = sequelize.define(
   }
 );
 
+// Continents.belongsToMany(Country, {
+//   through: ContinentsCountriesStates,
+//   foreignKey: "id_continents",
+//   otherKey: "id_countries",
+//   as: "countries"
+// });
+
+// Continents.hasMany(ContinentsCountriesStates, {foreignKey: "id_continents"});
+
+
 export default Continents;

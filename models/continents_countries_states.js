@@ -1,6 +1,5 @@
 import { sequelize } from "../db.js";
 import Continents from "./continents.js";
-import Country from "./country.js";
 import States from "./states.js";
 
 const ContinentsCountriesStates = sequelize.define(
@@ -19,13 +18,11 @@ const ContinentsCountriesStates = sequelize.define(
   {
     sequelize,
     modelName: "continents_countries_states",
+    tableName: "continents_countries_states",
   }
 );
 
-ContinentsCountriesStates.belongsTo(Country, { foreignKey: "id_countries" });
-ContinentsCountriesStates.belongsTo(Continents, {
-  foreignKey: "id_continents",
-});
-ContinentsCountriesStates.belongsTo(States, { foreignKey: "id_states" });
+ContinentsCountriesStates.belongsTo(Continents, {foreignKey: "id_continents",as:"continent"});
+ContinentsCountriesStates.belongsTo(States, { foreignKey: "id_states",as: "state" });
 
 export default ContinentsCountriesStates;

@@ -1,6 +1,7 @@
 import { sequelize } from "../db.js";
 import Languages from "./languages.js";
 import Subdivision from "./subdivision.js";
+import ContinentsCountriesStates from "./continents_countries_states.js";
 
 const Country = sequelize.define(
   "countries",
@@ -56,11 +57,11 @@ const Country = sequelize.define(
       allowNull: true,
     },
     subdivisions_id: {
-      type: sequelize.Sequelize.INTEGER,
+      type: sequelize.Sequelize.TEXT,
       allowNull: true,
     },
     languages_id: {
-      type: sequelize.Sequelize.INTEGER,
+      type: sequelize.Sequelize.TEXT,
       allowNull: true,
     },
   },
@@ -76,6 +77,17 @@ Country.belongsTo(Subdivision,{
 
 Country.belongsTo(Languages,{
   foreignKey: 'languages_id',
+  as: "language",
 })
+
+Country.hasMany(ContinentsCountriesStates, { foreignKey: "id_countries" });
+
+
+// Country.belongsToMany(Continents, {
+//   through: ContinentsCountriesStates,
+//   foreignKey: "id_countries",
+//   otherKey: "id_continents",
+//   as: "continents"
+// });
 
 export default Country;

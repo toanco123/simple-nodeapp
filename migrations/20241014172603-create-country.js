@@ -54,11 +54,11 @@ module.exports = {
         allowNull: true
       },
       subdivisions_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.TEXT,
         allowNull: true
       },
       languages_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.TEXT,
         allowNull: true
       },
       createdAt: {
